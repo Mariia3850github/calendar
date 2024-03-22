@@ -5,7 +5,11 @@ const currentMonth = ref(currentDate.value.getMonth() + 1);
 const weeksInMonth = ref(0);
 const calendar: any = ref();
 const dateSelected: any = ref(null);
+const currentDay = ref(currentDate.value.getDate());
 // const firstDayInMonth = ref(new Date())
+
+const languageList = ref(["ru", "eng"])
+const selectedLanguage = ref("ru")
 
 function getFirstDayOfMonth(year: number, month: number) {
   // Создаем объект Date для первого дня месяца
@@ -180,17 +184,36 @@ async function selectDate(year: number, day: number, month: number) {
   dateSelected.value = selectedDate;
 
   calendar.value = await calendarGeneration();
+  currentDay.value = day;
+}
+
+const isActive = (year: number, month: number, day: number) => {
+  // Добавьте здесь логику для определения, является ли день активным
+  // Например, сравнение с текущей датой или другой вашей логики
+  return (
+    year === currentYear.value &&
+    month === currentMonth.value &&
+    day === currentDay.value
+  );
+};
+
+async function toggleLanguage () {
+  if (selectedLanguage.value === 'ru') {
+    selectedLanguage.value = 'eng' 
+  } else {
+    selectedLanguage.value = 'ru' 
+  }
 }
 </script>
 <template>
   <div>
     <h2>Календарь</h2>
 
-    <div>
+    <div style="margin-bottom: 1.5rem;">
       День недели: {{ currentDate.getDay() }} <br />
       Текущий месяц: {{ currentMonth }} <br />
       Год: {{ currentYear }} <br />
-      Число месяца: {{ currentDate.getDate() }} <br />
+      Число месяца: {{ currentDay }} <br />
       Дней в месяце: {{ getDaysInMonth(currentYear, currentMonth) }} <br />
       Недель в месяце: {{ weeksInMonth }}
     </div>
@@ -200,7 +223,12 @@ async function selectDate(year: number, day: number, month: number) {
         <button @click="prevMonth()" class="arrow arrow-left">
           <i class="bi bi-caret-left-fill"></i>
         </button>
-        <p>{{ monthNames[currentMonth - 1].eng }} {{ currentYear }}</p>
+        <p>
+          {{ currentDay }}, 
+          <span v-if="selectedLanguage === 'eng'">{{ monthNames[currentMonth - 1].eng }}</span>
+          <span v-if="selectedLanguage === 'ru'">{{ monthNames[currentMonth - 1].rus }}</span>
+          {{ currentYear }}
+        </p>
         <button @click="nextMonth()" class="arrow arrow-right">
           <i class="bi bi-caret-right-fill"></i>
         </button>
@@ -208,37 +236,71 @@ async function selectDate(year: number, day: number, month: number) {
       <div class="dayName">
         <ul>
           <li v-for="(dayName, index) in dayNames" :key="index">
-            <span>{{ dayName.eng }}</span>
+            <span v-if="selectedLanguage === 'eng'">{{ dayName.eng }}</span>
+            <span v-if="selectedLanguage === 'ru'">{{ dayName.rus }}</span>
           </li>
         </ul>
       </div>
       <div class="body">
         <div class="week" v-for="(week, index) in calendar" :key="index">
           <div class="day" v-for="(element, index) in week" :key="index">
-            <span
-              ><button
-                @click="selectDate(element.year, element.day, element.month)"
-              >
-                {{ element.day }}
-              </button></span
+            <button
+              @click="selectDate(element.year, element.day, element.month)"
+              :class="{
+                active: isActive(element.year, element.month, element.day),
+              }"
             >
+              <span>{{ element.day }}</span>
+            </button>
           </div>
         </div>
       </div>
       <div>
-        {{ dateSelected }}
+        <p style="margin: 1rem 0">{{ dateSelected }}</p>
       </div>
+      <div><button class="languageToggler" @click="toggleLanguage()">Сменить язык</button></div>
     </div>
   </div>
 </template>
 
 <style lang="scss" scoped>
+.languageToggler {
+  border: 0;
+  background-color: #f7f7f7;
+  // border: 1px solid #3ef;
+  padding: .5rem 2rem;
+  border-radius: 5px;
+  transition: 400ms;
+  transform: scale(1);
+  &:active {
+    transform: scale(.95);
+  }
+}
 .week {
   display: flex;
   .day {
     padding: 5px;
-    width: 45px;
     text-align: center;
+    button {
+      display: flex;
+      height: 35px;
+      width: 35px;
+      background-color: #fff;
+      border: 1px solid transparent;
+      transition: 400ms;
+      &.active {
+        // background-color: #eee;
+        border-color: #3ef;
+      }
+      span {
+        display: block;
+        margin: auto;
+      }
+      &:hover {
+        // background-color: #eee;
+        border-color: #3ef;
+      }
+    }
   }
 }
 #calendar {
@@ -248,6 +310,7 @@ async function selectDate(year: number, day: number, month: number) {
   display: flex;
   width: 100%;
   justify-content: space-between;
+  padding: 0 15px;  
   p {
     display: block;
     margin: auto 0;
@@ -262,11 +325,13 @@ async function selectDate(year: number, day: number, month: number) {
   ul {
     display: flex;
     padding: 0;
-    margin: 1rem 0;
+    margin: 1rem 0 .5rem;
     list-style-type: none;
     justify-content: space-around;
     li {
       //   padding: 5px;s
+      padding: 0 15px;
+      width: 45px;
     }
   }
 }
